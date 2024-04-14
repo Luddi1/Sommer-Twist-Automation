@@ -1,0 +1,262 @@
+esphome:
+  name: astra-gate
+  friendly_name: ASTRA-gate
+  on_boot:
+  # buzzeron on startup
+    priority: -100
+    then:
+      - rtttl.play: 'BarbieGirl:d=4,o=5,b=125:8g#,8e,8g#,8c#6,a'
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+ota:
+  password: "4231c5ddbc304e2fb4416c7ab1234567"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  reboot_timeout: 15min
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Astra-Gate Fallback Hotspot"
+    password: "dYCe31234567"
+
+captive_portal:
+    
+mqtt:
+  broker: tower
+  topic_prefix: "leusmann/gate"
+  reboot_timeout: 15min
+  on_message:
+    - topic: leusmann/gate
+      qos: 0
+      then: # logic to open or close depending on current state
+        - if:
+            condition:
+              and:
+                - lambda: 'return x == "open";'
+                - state_machine.state: "CLOSED"
+            then:
+              - logger.log: "mqtt -> Is closed, opening"
+              - script.execute: open_close_script
+        - if:
+            condition:
+              and:
+                - lambda: 'return x == "open";'
+                - state_machine.state: "CLOSING"
+            then:
+              - logger.log: "mqtt -> Is closing, stopping and opening"
+              - script.execute: stop_reverse_script
+        - if:
+            condition:
+              and:
+                - lambda: 'return x == "close";'
+                - state_machine.state: "OPEN"
+            then:
+              - logger.log: "mqtt -> Is open, closing"
+              - script.execute: open_close_script
+        - if:
+            condition:
+              and:
+                - lambda: 'return x == "close";'
+                - state_machine.state: "OPENING"
+            then:
+              - logger.log: "mqtt -> Is opening, stopping and closing"
+              - script.execute: stop_reverse_script
+
+external_components:
+  - source:
+      type: git
+      url: https://github.com/muxa/esphome-state-machine
+
+status_led:
+  pin:
+    number: GPIO4
+    inverted: true
+
+rtttl:
+  output: rtttl_out
+
+# Scripts for actions
+script:
+  - id: open_close_script
+    then:
+      - logger.log: "Running open_close_script"
+      - output.turn_on: relay1
+      - delay: 0.5s
+      - output.turn_off: relay1
+  - id: stop_reverse_script
+    then:
+      - logger.log: "Running stop_reverse_script"
+      - output.turn_on: relay1
+      - delay: 0.5s
+      - output.turn_off: relay1
+      - delay: 3.0s
+      - output.turn_on: relay1
+      - delay: 0.5s
+      - output.turn_off: relay1
+
+output:
+  - platform: ledc
+    pin: GPIO12
+    id: rtttl_out
+  - platform: gpio
+    pin: 25
+    id: relay1 # triggering gate controller
+  - platform: gpio
+    pin: 26
+    id: relay2 # unused
+  - platform: gpio
+    pin: 33
+    id: relay3 # unused
+  - platform: gpio
+    pin: 32
+    id: relay4 # unused
+
+binary_sensor:
+  - platform: gpio
+    name: "SWITCH 1" # signal from dual induction loop, triggered only when vehicle approaching
+    pin: 
+      number: 34
+      inverted: true
+      mode:
+        input: true
+    on_press: 
+      if:
+        condition:
+          state_machine.state: "CLOSED"
+        then:
+          - logger.log: "Induction loop triggered -> Is closed, opening"
+          - script.execute: open_close_script
+        else:
+          if:
+            condition:
+              state_machine.state: "CLOSING"
+            then:
+              - logger.log: "Induction loop triggered -> Is closing, stopping and opening"
+              - script.execute: stop_reverse_script
+
+  - platform: gpio
+    name: "SWITCH 2" # manual switch, located at gate
+    pin: 
+      number: 35
+      inverted: true
+      mode:
+        input: true
+    on_press: 
+      then:
+        - logger.log: "Manual switch pressed -> toggle gate"
+        - output.turn_on: relay1
+        - delay: 0.5s
+        - output.turn_off: relay1
+
+  - platform: gpio
+    name: "SWITCH 3"
+    pin: 
+      number: 36
+      inverted: true
+      mode:
+        input: true
+
+  - platform: gpio
+    name: "SWITCH 4"
+    pin: 
+      number: 39
+      inverted: true
+      mode:
+        input: true
+
+  - platform: gpio
+    name: "Impuls"
+    pin: 
+      number: 5
+      inverted: true
+      mode:
+        input: true
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms
+
+  - platform: gpio
+    name: "SH"
+    pin: 
+      number: 18
+      inverted: true
+      mode:
+        input: true
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms
+
+  - platform: gpio
+    name: "Zu"
+    pin: 
+      number: 19
+      inverted: true
+      mode:
+        input: true
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms
+    on_press:
+      state_machine.transition: ZuON
+    on_release: 
+      state_machine.transition: ZuOFF
+
+  - platform: gpio
+    name: "Auf"
+    pin: 
+      number: 23
+      inverted: true
+      mode:
+        input: true
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms
+    on_press:
+      state_machine.transition: AufON
+    on_release: 
+      state_machine.transition: AufOFF
+
+state_machine:
+  - name: "Gate Control" # states driven by phototransistors + LEDs only
+    id: gate_sm
+    initial_state: OPEN
+    states:
+      - name: OPENING
+        on_enter:
+          - delay: 0.25s
+      - name: OPEN
+        on_enter:
+          - delay: 0.25s
+      - name: CLOSING
+        on_enter:
+          - delay: 0.25s
+      - name: CLOSED
+        on_enter:
+          - delay: 0.25s
+
+    inputs:
+      - name: ZuON
+        transitions:
+          - OPEN -> CLOSING
+          - CLOSED -> CLOSING # should never happen
+          - OPENING -> CLOSING # should never happen
+      - name: ZuOFF
+        transitions:
+          - CLOSING -> CLOSED
+      - name: AufON
+        transitions:
+          - CLOSED -> OPENING
+          - OPEN -> OPENING # should never happen
+          - CLOSING -> OPENING # should never happen
+      - name: AufOFF
+        transitions:
+          - OPENING -> OPEN
