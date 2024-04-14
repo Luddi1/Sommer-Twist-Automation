@@ -6,6 +6,9 @@ However, to integrate this into a smarter setup, distinct commands for _open_ an
 
 **Solution**: We read out the LEDs on the gate controller PCB which indicate whether the gate opens or closes, save the state and toggle the impulse-input, depending on the current state and the desired command. 
 
+![Image of adapter](Gallery/overview.png)
+
+
 This solution needs no hardware hacks on the original Sommer controller. 
 Find below the contents of the repository, BOMs for the read-out PCB and the overall system. 
 
@@ -27,7 +30,7 @@ D2, D7 |	PESD3V3S2UT | 	SOT-23 |	2 | PESD3V3S2UT
 D1 |	SS 16 |	D_SMA |	1 | SS 16 
 D6 |	P4SMAJ5.0CA |	D_SMA |	1 | P4SMAJ5.0CA 
 Q1, Q2, Q3, Q4, Q5, Q6, Q7 |	SFH309-5 |	LED_D3.0mm_Clear |	7 | SFH 309-5 OSO 
-J1 |	DG308 | 2,54-6 | 1 |	TerminalBlock_Phoenix_MPT-0,5-6-2.54_1x06_P2.54mm_Horizontal |	1 | DG308 2,54-6 
+J1 |	DG308 | 2,54-6 | 1 | DG308 2,54-6 
 
 
 ## BOM Complete Setup
