@@ -54,3 +54,4 @@ DIN rail, mounting hardware, some Wago 221 and DIN rail adapter 221-500, 0.34 fe
 Some notes:
 * The printed parts are designed for ABS. Other materials will probably work, too. 
 * Keep the cable run for the SommerAdapter PCB as short as possible and avoid runs next to other cables. 
+* Flash ESPHome to ASTRA controller and set to SPI mode. See [manual](https://templates.blakadder.com/assets/ASTRA_controller.pdf). Use SPI (left) RJ12 socket. We need the GPIOs and GND/3.3V to power our board. 

@@ -1,0 +1,30 @@
+connectors:
+  SommerAdapter:
+    pinlabels: [+3.3V, GND, Auf, Zu, Signal3, Signal4]
+  Sommer Gate Controller:
+    pincount: 2
+    type: impulse input
+  ASTRA relays:
+    pincount: 2
+    type: relay 1 
+  ASTRA RJ12:
+    pinlabels: [3V3, GND, MOSI, MISO, CLK, CS0]
+    type: SPI mode
+
+cables:
+  cable:
+    gauge: 0.34 mm2
+    length: 2
+    colors: [WH, GY, RD, BU, GN, BN, YE, PK]
+    shield: false
+
+connections:
+  -
+    - Sommer Gate Controller: [1,2]
+    - cable: [1,2]
+    - ASTRA relays: [1,2]
+  -
+    - SommerAdapter: [1-6]
+    - cable: [3-8]
+    - ASTRA RJ12: [1-6]
+  
