@@ -6,6 +6,8 @@ However, to integrate this into a smarter setup, distinct commands for _open_ an
 
 **Solution**: We read out the LEDs on the gate controller PCB which indicate whether the gate opens or closes, save the state and toggle the impulse-input, depending on the current state and the desired command. 
 
+![Image of adapter](Gallery/manualLEDs.png)
+
 ![Image of adapter](Gallery/overview.png)
 
 
